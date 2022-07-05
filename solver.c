@@ -20,144 +20,69 @@ e   d
 
 typedef unsigned int uint;
 
-typedef enum Digit{
-         /*gfedcba*/ 
-    d0 = 0b0111111,
-    d1 = 0b0001010,
-    d2 = 0b1010111,
-    d3 = 0b1001111,
-    d4 = 0b1101010,
-    d5 = 0b1101101,
-    d6 = 0b1111101,
-    d7 = 0b0001011,
-    d8 = 0b1111111,
-    d9 = 0b1101111
-} digit;
-
 typedef bool display[5][3];
 typedef uint digits[LEN];
 
-uint map[] = {d0, d1, d2, d3, d4, d5, d6, d7, d8, d9};
-
-void turn_on_segment(display disp, uint b){
 /*
-display :
-  0 1 2
-0 # # #
-1 #   #
-2 # # #
-3 #   #
-4 # # #
-*/
-    switch(b)
-    {
-        case 0b0000001:
-            disp[0][0] = true;
-            disp[0][1] = true;
-            disp[0][2] = true;
-            break;
-        case 0b0000010:
-            disp[0][2] = true;
-            disp[1][2] = true;
-            disp[2][2] = true;
-            break;
-        case 0b0000100:
-            disp[4][0] = true;
-            disp[4][1] = true;
-            disp[4][2] = true;
-            break;
-        case 0b0001000:
-            disp[2][2] = true;
-            disp[3][2] = true;
-            disp[4][2] = true;
-            break;
-        case 0b0010000:
-            disp[2][0] = true;
-            disp[3][0] = true;
-            disp[4][0] = true;
-            break;
-        case 0b0100000:
-            disp[0][0] = true;
-            disp[1][0] = true;
-            disp[2][0] = true;
-            break;
-        case 0b1000000:
-            disp[2][0] = true;
-            disp[2][1] = true;
-            disp[2][2] = true;
-            break;
-    }
-}
+there is an additional row and column
+for finding distance between a digit and an empty spcace.
+I thought it would help to adapt program for working with numbers
+with different lengths, but it didn't
 
-uint count_segments(digit d){
-    uint seg = 0;
-    for (uint i = 0; i < SEGMENTS; i++)
-        if(d & (1 << i))
-            seg++;
-    return seg;
-}
+*/
+uint distance[11][11] = {
+    {0, 4, 3, 3, 4, 3, 2, 3, 1, 2, 6},
+    {4, 0, 5, 3, 2, 5, 6, 1, 5, 4, 2},
+    {3, 5, 0, 2, 5, 4, 3, 4, 2, 3, 5},
+    {3, 3, 2, 0, 3, 2, 3, 2, 2, 1, 5},
+    {4, 2, 5, 3, 0, 3, 4, 3, 3, 2, 4},
+    {3, 5, 4, 2, 3, 0, 1, 4, 2, 1, 5},
+    {2, 6, 3, 3, 4, 1, 0, 5, 1, 2, 6},
+    {3, 1, 4, 2, 3, 4, 5, 0, 4, 3, 3},
+    {1, 5, 2, 2, 3, 2, 1, 4, 0, 1, 7},
+    {2, 4, 3, 1, 2, 1, 2, 3, 1, 0, 6},
+    {6, 2, 5, 5, 4, 5, 6, 3, 7, 6, 0},
+};
+
+uint segments[10] = {6, 2, 5, 5, 4, 5, 6, 3, 7, 6};
 
 uint count_all_segments(digits dig){
     uint i = 0, seg = 0;
-    while(dig[i]){
-        seg += count_segments(dig[i]);
+    while(dig[i] != 10){
+        seg += segments[dig[i]];
         i++;
     }
     return seg;
 }
 
-void turn_on_digit(display disp, digit d){
-    for (uint i = 0; i < SEGMENTS; i++){
-        if(d & (1 << i)){
-            turn_on_segment(disp, 1 << i);
-        }
-    }
-}
-
-void show_display(display disp){
-    for(uint i = 0; i < ROWS; i++){
-        for(uint j = 0; j < COLS; j++){
-            if(disp[i][j])
-                printf("# ");
-            else
-                printf("  ");
-        }
-        printf("\n");
-    }
-}
-
-void clear_display(display disp){
-    for(uint i = 0; i < ROWS; i++)
-        for(uint j = 0; j < COLS; j++)
-            disp[i][j] = false;
+void print_digits(digits d){
+    for(int i = 0; i < LEN; i++)
+        printf("%d ", d[i]);
+    printf("\n");
 }
 
 void uint_to_digits(uint n,  digits dig){
     uint i = 0;
-    while(n){
-        if(i >= LEN){
-            printf("number of digits should be less then %d\n", LEN + 1);
-            exit(1);
+    if (n != 0){
+        while(n){
+            if(i >= LEN){
+                printf("number of digits should be less then %d\n", LEN + 1);
+                exit(1);
+            }
+            dig[i] = n%10;
+            n/=10;
+            i++;
         }
-        dig[i] = map[n%10];
-        n/=10;
-        i++;
+        dig[i] = 10;
     }
-}
-
-uint distance(digit d1, digit d2){
-    uint dist = 0;
-    for (uint i = 0; i < SEGMENTS; i++){
-        if((d1 & (1 << i)) != (d2 & (1 << i)))
-            dist++;
-    } 
-    return dist;
+    else
+        dig[i] = 10;
 }
 
 uint full_distance(digits dig1, digits dig2){
     uint i = 0, dist = 0;
-    while(dig1[i] || dig1[i]){
-        dist += distance(dig1[i], dig2[i]);
+    while(dig1[i] != 10 || dig2[i] != 10){
+        dist += distance[dig1[i]][dig2[i]];
         i++;
     }
     return dist;
@@ -189,21 +114,21 @@ uint get_max(uint len){
 uint find_max(uint n, uint moves){
     digits dig1 = {0};
     uint_to_digits(n, dig1);
+    print_digits(dig1);
     uint l = num_len(n), 
         min = get_min(l),
         max = get_max(l),
-        M = 0,
         dist = moves * 2,
         segments = count_all_segments(dig1);
-    for(uint i = min; i < max + 1; i++){
+    for(uint i = max; i >= min; i--){
         digits dig2 = {0};
         uint_to_digits(i, dig2);
         if(full_distance(dig1, dig2) == dist &&
             count_all_segments(dig2) == segments){
-            M = i;
+            return i;
         }
     }
-    return M;
+    return -1;
 }
 
 uint str_to_uint(const char* str){
